@@ -7,5 +7,5 @@ produce a red that `pytest` reports — on a pull request that must not be merge
 
 
 def test_this_fails_on_purpose():
-    expected = 2  # not a constant comparison: PLR0133 is a lint failure, and this must be a test one
+    expected = 2  # a name, not a constant: PLR0133 would make this a lint red
     assert 1 == expected, "deliberate: this is the red build the gate must refuse"
