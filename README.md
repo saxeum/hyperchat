@@ -33,7 +33,7 @@ costs cents a month; and the open issues are a backlog rather than work in fligh
 for (`#24`), the two eval tickets that would sharpen it (`#94`, `#97`), what production would differ
 by (`#78`), and one key file to rename on the host that holds it (`#65`).
 
-**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.8 s · ~71 k tokens per run — at `6a7686e`, [the report](docs/eval-report.md).
+**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.7 s · ~71 k tokens per run — at `d1e0ea2`, [the report](docs/eval-report.md).
 
 ## Read this in 60 seconds, 10 minutes, or an hour
 
@@ -62,9 +62,8 @@ Twelve PRs here exist only because the repository is public:
 | `#49` | Dependabot's interpreter ignore |
 
 A private build would commit `terraform.tfvars` and state, give CI a service-account key, grant
-`roles/editor`, let the bot push, and force-push the history once. This repository pays roughly a
-third of its pull requests instead — twelve of thirty-four — and buys properties a reviewer can
-check: no identifier in the tree, a Workload Identity condition a stranger can read and test, a fork
+`roles/editor`, let the bot push, and force-push the history once. In the first day this repository
+paid twelve of its thirty-four pull requests instead, and bought properties a reviewer can check: no identifier in the tree, a Workload Identity condition a stranger can read and test, a fork
 that proves the negative direction, and a history that does not need rewriting.
 
 ## Layout
@@ -175,9 +174,11 @@ empty reply is a 502 as well, and the log carries `finish_reason`.
 service already prints: `tracing=off`, or `tracing=on` with the project, the agent address and whether
 inputs and outputs are kept. That report is asked of langsmith rather than restated from its rules, and
 a misconfiguration is a line in the log rather than a failed request — the service answering 200 with
-an empty project view is otherwise silent. The deployed revision hides the caller's text
-(`LANGSMITH_HIDE_INPUTS`, `LANGSMITH_HIDE_OUTPUTS`), so a trace carries the run tree, the tool calls,
-the token counts and the model; a full trace is a local opt-in, with the key outside the checkout:
+an empty project view is otherwise silent. When a LangSmith key is supplied the deploy sets
+`LANGSMITH_HIDE_INPUTS` and `LANGSMITH_HIDE_OUTPUTS`, so a trace carries the run tree, the tool calls,
+the token counts and the model. **The revision serving today has no key in Secret Manager**, so it
+runs untraced and says `tracing=off`; the traced half is the one claim here nobody has observed. A
+full trace is a local opt-in, with the key outside the checkout:
 
 ```sh
 MESSAGE='Reply with exactly: ok' LANGSMITH_TRACING=true make chat
