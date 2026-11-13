@@ -1,5 +1,5 @@
 # Every operation this repository supports, in the order it happens:
-#   github -> registry -> login -> build -> push -> deploy.  `make help` lists them.
+#   github -> registry -> login -> build -> push -> deploy.  `make help-all` lists them.
 #
 # The tag is the commit and the registry refuses to overwrite a tag, so pushing the same commit twice
 # fails on purpose. A rebuild is `make push TAG=<sha>-2`.
@@ -49,12 +49,15 @@ REMOTE   = $(REGISTRY)/$(IMAGE):$(TAG)
 
 .PHONY: help info lint test eval build dev run stop token chat github github-plan github-create github-remote \
         github-apply github-status pipeline-audit registry-plan registry-apply login push limits report \
-        registry-status registry-verify image-exists image-digest deploy-plan deploy smoke
+        registry-status registry-verify image-exists image-digest deploy-plan deploy smoke help-all
 
-help: ## Show this help
-	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help: ## The commands a newcomer needs; `make help-all` lists every target
+	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+: ## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-info: ## Print what the next command will use, before it uses it
+help-all: ## Every target, including the one-time and platform ones
+	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+: ## / || /^[a-zA-Z0-9_-]+: ### / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+info: ### Print what the next command will use, before it uses it
 	@printf '  project     %s\n' "$(if $(PROJECT),$(PROJECT),<unset: run make registry-apply>)"
 	@printf '  region      %s\n' "$(REGION)"
 	@printf '  repository  %s\n' "$(REPOSITORY)"
@@ -69,7 +72,7 @@ lint: ## Check formatting and lint (no credentials; ruff itself comes from PyPI)
 test: ## Run the tests
 	uv run pytest -q
 
-limits: ## Assert the per-caller rate limit: LIMIT requests allowed, the next two refused
+limits: ### Assert the per-caller rate limit: LIMIT requests allowed, the next two refused
 	@[ -n "$(APP_URL)" ] || { \
 		echo "APP_URL is unset: there is no applied state in terraform/app." >&2; \
 		echo "run 'make deploy' once, or pass APP_URL=<url>" >&2; \
@@ -82,7 +85,7 @@ report: ## Run the eval and write docs/eval-report.md and the README line from i
 eval: ## Every case in the dataset through the graph, beside a baseline that is not a model
 	@$(LOCAL_ENV); uv run python scripts/eval.py
 
-build: ## Build the image for this commit, pulling the base image
+build: ### Build the image for this commit, pulling the base image
 	docker build --pull -t $(LOCAL) .
 
 # The environment both local targets need, in one place so the two cannot drift: `.env` for the
@@ -110,16 +113,16 @@ LOCAL_ENV = if [ -f .env ] && grep -qE '^[[:space:]]*(export[[:space:]]+)?PROVID
 dev: ## Run the app from the source tree on PORT, reading .env; no image
 	@$(LOCAL_ENV); uv run uvicorn hyperchat.main:api --host 127.0.0.1 --port $(PORT)
 
-run: ## Run the image on PORT, with .env passed in so the fail-closed config is satisfied
+run: ### Run the image on PORT, with .env passed in so the fail-closed config is satisfied
 	docker run --rm --name $(IMAGE) --env-file .env -p $(PORT):8080 $(LOCAL)
 
-token: ## Print a Google ID token for EXPECTED_AUDIENCE (needs gcloud, logged in as a user)
+token: ### Print a Google ID token for EXPECTED_AUDIENCE (needs gcloud, logged in as a user)
 	@scripts/token.sh
 
 # The claims are the point, and one of them is the allowlist key. `sub` is what `ALLOWED_SUBS` matches
 # — not `email`, which is for display — and reading it out of a real token is the only way to know it,
 # because it is a Google subject rather than anything this repository mints or can compute.
-token-info: ## Decode the header and claims of a freshly minted token
+token-info: ### Decode the header and claims of a freshly minted token
 	@$(MAKE) --no-print-directory token | python3 -c 'import base64,json,sys; p=sys.stdin.read().strip().split("."); d=lambda s: json.loads(base64.urlsafe_b64decode(s+"="*(-len(s)%4))); print(json.dumps({"header":d(p[0]),"claims":d(p[1])},indent=2,sort_keys=True))' 
 
 # The same graph the endpoint serves, run directly: no HTTP and no token, because authentication is a
@@ -132,10 +135,10 @@ token-info: ## Decode the header and claims of a freshly minted token
 chat: ## One message from MESSAGE in the environment through the graph (reads .env, and the key from outside it)
 	@$(LOCAL_ENV); uv run python -m hyperchat.chat "$$MESSAGE"
 
-stop: ## Stop the running container
+stop: ### Stop the running container
 	@docker stop $(IMAGE) 2>/dev/null || true
 
-github: ## Create the repository, point origin at it, push, then protect the branch
+github: ### Create the repository, point origin at it, push, then protect the branch
 	@[ -n "$$GITHUB_TOKEN" ] || { \
 		echo "GITHUB_TOKEN is unset: the GitHub provider authenticates with it." >&2; \
 		echo "see docs/repository-as-code.md for what that token can do" >&2; \
@@ -151,15 +154,15 @@ github: ## Create the repository, point origin at it, push, then protect the bra
 	@echo "== protection"; $(MAKE) --no-print-directory github-apply
 	@echo "== published: $$($(TERRAFORM_GITHUB) output -raw html_url)"
 
-github-plan: ## Show what the GitHub root creates, without creating it
+github-plan: ### Show what the GitHub root creates, without creating it
 	$(TERRAFORM_GITHUB) init -input=false
 	$(TERRAFORM_GITHUB) plan -input=false
 
-github-create: ## Create the repository, so there is somewhere to push
+github-create: ### Create the repository, so there is somewhere to push
 	$(TERRAFORM_GITHUB) init -input=false
 	$(TERRAFORM_GITHUB) apply -input=false -target=github_repository.repo
 
-github-remote: ## Point origin at the repository this root created
+github-remote: ### Point origin at the repository this root created
 	@[ -n "$(FULL_NAME)" ] || { \
 		echo "FULL_NAME is unset: no applied state in terraform/github." >&2; \
 		echo "run 'make github-create' once, or pass FULL_NAME=owner/name" >&2; \
@@ -168,7 +171,7 @@ github-remote: ## Point origin at the repository this root created
 		&& git remote set-url origin "$$($(TERRAFORM_GITHUB) output -raw ssh_clone_url)" \
 		|| git remote add origin "$$($(TERRAFORM_GITHUB) output -raw ssh_clone_url)"
 
-github-apply: ## Apply the rest, so branch protection lands once the branch exists
+github-apply: ### Apply the rest, so branch protection lands once the branch exists
 	$(TERRAFORM_GITHUB) init -input=false
 	$(TERRAFORM_GITHUB) apply -input=false
 
@@ -188,7 +191,7 @@ github-apply: ## Apply the rest, so branch protection lands once the branch exis
 # refuses or the field is absent: an absence that was never asked for is not an absence, and a target
 # that stops at the first refusal cannot report on the rest. The exit status is non-zero if anything
 # was unreadable, so this stays an observation rather than a check, and still fails when it is blind.
-github-status: ## Print the live repository settings, protection and access. An observation, not a check
+github-status: ### Print the live repository settings, protection and access. An observation, not a check
 	@[ -n "$(FULL_NAME)" ] || { \
 		echo "FULL_NAME is unset: no applied state in terraform/github." >&2; \
 		echo "run 'make github-create' once, or pass FULL_NAME=owner/name" >&2; \
@@ -213,18 +216,18 @@ github-status: ## Print the live repository settings, protection and access. An 
 		--jq '.plan.filled_seats // "unreadable: no plan in the response"'; \
 	exit $$failed
 
-registry-plan: ## Show what the registry root creates, without creating it
+registry-plan: ### Show what the registry root creates, without creating it
 	$(TERRAFORM) init -input=false
 	$(TERRAFORM) plan -input=false
 
-registry-apply: ## Create the registry. Once, by the human, before the first push
+registry-apply: ### Create the registry. Once, by the human, before the first push
 	$(TERRAFORM) init -input=false
 	$(TERRAFORM) apply -input=false
 
-login: ## Authorise docker for the registry host, as your own gcloud identity
+login: ### Authorise docker for the registry host, as your own gcloud identity
 	@gcloud auth configure-docker $(REGION)-docker.pkg.dev --quiet
 
-push: ## Tag and push the image for this commit
+push: ### Tag and push the image for this commit
 	@[ -n "$(PROJECT)" ] || { \
 		echo "PROJECT is unset: there is no applied state in terraform/registry." >&2; \
 		echo "run 'make registry-apply' once, or pass PROJECT=<id>" >&2; \
@@ -232,7 +235,7 @@ push: ## Tag and push the image for this commit
 	docker tag $(LOCAL) $(REMOTE)
 	docker push $(REMOTE)
 
-registry-status: ## Print the live registry and its IAM policy. An observation, not a check
+registry-status: ### Print the live registry and its IAM policy. An observation, not a check
 	@[ -n "$(PROJECT)" ] || { \
 		echo "PROJECT is unset: there is no applied state in terraform/registry." >&2; \
 		echo "run 'make registry-apply' once, or pass PROJECT=<id>" >&2; \
@@ -248,16 +251,16 @@ registry-status: ## Print the live registry and its IAM policy. An observation, 
 # The service image is the commit tag; `make registry-verify` shows what the service is actually
 # running beside the digest that tag resolves to. It is an observation, not a check: a service can be
 # deliberately on an older tag, and the useful answer is both values rather than a pass/fail.
-image-exists: ## Exit 0 when TAG's image is in the registry, 1 when it is not. Prints nothing
+image-exists: ### Exit 0 when TAG's image is in the registry, 1 when it is not. Prints nothing
 	@command -v gcloud >/dev/null 2>&1 || exit 1
 	@gcloud artifacts docker images describe "$(REMOTE)" --project=$(PROJECT) \
 		--format='value(image_summary.digest)' >/dev/null 2>&1
 
-image-digest: ## Print TAG's registry digest, or fail if it was never pushed
+image-digest: ### Print TAG's registry digest, or fail if it was never pushed
 	@gcloud artifacts docker images describe "$(REMOTE)" --project=$(PROJECT) \
 		--format='value(image_summary.digest)'
 
-registry-verify: ## Show the deployed image and the registry digest for TAG (needs gcloud)
+registry-verify: ### Show the deployed image and the registry digest for TAG (needs gcloud)
 	@[ -n "$(PROJECT)" ] || { \
 		echo "PROJECT is unset: there is no applied state in terraform/registry." >&2; \
 		echo "run 'make registry-apply' once, or pass PROJECT=<id>" >&2; \
@@ -282,7 +285,7 @@ AUTO_APPROVE ?=
 # The secret version is an ordinary resource now, so secret -> version -> grant -> service is one
 # dependency graph rather than three interleaved commands. The value is write-only and arrives as
 # TF_VAR_provider_api_key from the token file outside the checkout.
-deploy-plan: ## Show what the Cloud Run root would change, without changing it
+deploy-plan: ### Show what the Cloud Run root would change, without changing it
 	@[ -n "$(PROJECT)" ] || { \
 		echo "PROJECT is unset: there is no applied state in terraform/registry." >&2; \
 		echo "run 'make registry-apply' once, or pass PROJECT=<id>" >&2; \
@@ -334,10 +337,10 @@ deploy: ## Deploy this commit's image, secret version and service to Cloud Run i
 			$(TERRAFORM_APP) apply -input=false $(AUTO_APPROVE) -var="project=$(PROJECT)" -var="image=$(REMOTE)" \
 				-var="langsmith_tracing=$$tracing"
 
-pipeline-audit: ## Check the live pipeline against what the README claims (needs gh; owner for protection)
+pipeline-audit: ### Check the live pipeline against what the README claims (needs gh; owner for protection)
 	@REPO=$(FULL_NAME) scripts/pipeline-audit.sh
 
-smoke: ## Assert the deployed probes and both auth directions (needs gcloud for a token)
+smoke: ### Assert the deployed probes and both auth directions (needs gcloud for a token)
 	@[ -n "$(APP_URL)" ] || { \
 		echo "APP_URL is unset: there is no applied state in terraform/app." >&2; \
 		echo "run 'make deploy' once, or pass APP_URL=<url>" >&2; \
