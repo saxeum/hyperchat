@@ -10,23 +10,29 @@
 #
 # `ad5fe91` (the eval harness) is the case: it touched no `src/`, no `Dockerfile`, no dependency and
 # no `terraform/app`, and it still queued all three. The deploy was cancelled; the queue was still
-# the defect.
+# the defect. It reads `true` today, because it also published a line into `README.md` and the corpus
+# has since moved into the image; `54f7303` is the same argument and is still `false`.
 #
 # The set below is the judgement this repository reserves. It is what the deployed artefact is made
 # of: the source, the image definition, the dependency pin, the interpreter, the Terraform that
 # describes the service, and this workflow — which is not copied into the image but does decide what
 # the deploy does once it runs.
 #
+# The four documents the agent's corpus names are in that set as well: the image copies `README.md`,
+# `SECURITY.md` and three files under `docs/`, and the agent answers from them at run time, so a merge
+# that edits one changes what the service says. This list called them documentation until `#108`: it
+# was written while the corpus was still outside the image, `d24487a` moved it in, and every merge
+# since then happened to touch `src/` as well, which is the only reason no deploy was wrongly skipped.
+#
 # Deliberately NOT deployable, each with the argument for its absence:
 #
 #   Makefile        a change to `make deploy` is not a change to what is deployed, and the next
 #                   deployable merge exercises it
-#   README.md       documentation
-#   docs/           documentation
+#   docs/eval-report.md
+#                   generated documentation, and the only file under `docs/` the corpus does not name
 #   evals/          a case set that runs on a laptop; `.dockerignore` keeps it out of the image
 #   scripts/        developer commands, also kept out of the image
 #   tests/          kept out of the image
-#   SECURITY.md     documentation
 #   terraform/github, terraform/registry
 #                   applied by hand, once, and untouched by a merge
 #
@@ -67,6 +73,8 @@ fi
 verdict=false
 while IFS= read -r file; do
 	case "$file" in
+	README.md | SECURITY.md | docs/authentication.md | docs/repository-as-code.md | \
+		docs/contributor.md | \
 	src/* | Dockerfile | pyproject.toml | uv.lock | .python-version | terraform/app/* | \
 		.github/workflows/deploy.yml)
 		verdict=true
