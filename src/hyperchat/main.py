@@ -53,7 +53,29 @@ from hyperchat.limits import RateLimiter
 # tool nobody runs. The service still refuses to start without it, because this line runs on import.
 settings = load_settings()
 
+# uvicorn's `LOGGING_CONFIG` configures `uvicorn`, `uvicorn.error` and `uvicorn.access`, and has no
+# `root` entry. This logger is a child of an unconfigured root, so it inherited a `WARNING` floor and
+# no handler: every INFO line the service logs about itself — `service config …` with the hashes and
+# the tracing report, the prompt and corpus identities — was dropped in a deployed revision while the
+# warnings appeared. `#19` and `#101` were both accepted on greps for those lines, and the count was
+# zero.
+#
+# `logging.basicConfig(level=logging.INFO)` fixes that and is too blunt: a root at INFO also raises
+# every other logger, which turned on `httpx2`'s request line — measured, once per provider call:
+#     INFO:httpx2:HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+# The level that was wrong is this logger's, so this logger gets it. `uvicorn`'s `Config.__init__`
+# applies its own configuration before `load_app()` imports this module, so this handler is installed
+# after uvicorn's dictConfig and is not cleared by it; with `disable_existing_loggers: False` and no
+# `root` key, nothing else in that configuration touches it.
+#
+# Not `propagate = False`: `caplog` reads the root, and a logger that only writes to its own handler
+# is a logger the suite cannot assert on. The duplication that leaves is a record reaching both this
+# handler and a root handler that uvicorn does not install.
 logger = logging.getLogger("hyperchat")
+logger.setLevel(logging.INFO)
+_handler = logging.StreamHandler()
+_handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
+logger.addHandler(_handler)
 
 _limiter: RateLimiter | None = None
 
@@ -85,9 +107,11 @@ async def lifespan(_app: FastAPI):
     is the 502 any provider failure is.
     """
     # What this process will answer with, in the same one-line format the eval writes, so `grep
-    # config` answers "what is running" and "what did this score measure" the same way. `INFO`, so it
-    # is visible where the log level is at INFO rather than uvicorn's default. `overrides` is empty
-    # here and named anyway: an absent field and an empty one read differently to a parser.
+    # config` answers "what is running" and "what did this score measure" the same way. `INFO`, which
+    # reaches the log because the handler and the level are installed at import above: uvicorn's
+    # configuration leaves this logger alone, and until that was fixed this line was written nowhere.
+    # `overrides` is empty here and named anyway: an absent field and an empty one read differently to
+    # a parser.
     #
     # The tracing pairs ride on this line rather than a second one: a misconfigured tracer is the one
     # failure that is otherwise silent, and two startup lines saying "what is running" is how the two
@@ -99,8 +123,8 @@ async def lifespan(_app: FastAPI):
     try:
         get_model()
     except NotConfigured:
-        # A warning rather than info, because uvicorn's default logging does not show info from this
-        # logger: an operator would see nothing at boot and discover it from a 503. It is not an
+        # A warning because it is a state an operator must not miss, not because it is the only level
+        # that is visible: `service config` above is INFO and now appears beside it. It is not an
         # error -- a deployment without a key is a deployment with the model turned off.
         logger.warning("provider key is unset: /api/chat will answer 503")
     yield

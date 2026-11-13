@@ -72,9 +72,8 @@ scope, whatever else the message contains.
 
 It is prepended to `messages[0]` on every call, in `call_model`, and never written into
 `MessagesState`: a system message in state is one a caller could append to. `prompt_sha256()` is the
-SHA-256 of that text, logged once at startup — at `INFO`, so it needs the log level at `INFO` rather
-than uvicorn's default — and recorded in every eval record, because a score with no prompt identity
-cannot say what it measured.
+SHA-256 of that text, logged once at startup at `INFO` and recorded in every eval record, because a
+score with no prompt identity cannot say what it measured.
 
 ## The configuration, on one line
 
@@ -89,6 +88,18 @@ add the tracing pairs below, and the service's `overrides` is empty because it h
 Neither the provider key nor the LangSmith key is in it, and a test asserts no eight-character piece of
 either appears. A configuration that can carry a credential is a configuration that ends up pasted into
 an issue with the rest of it.
+
+**Why the line reaches the log at all is a decision, and it is not uvicorn's.** `LOGGING_CONFIG`
+configures `uvicorn`, `uvicorn.error` and `uvicorn.access` and has no `root` entry, so a child logger
+inherits `WARNING` and no handler: until `main.py` put a handler and a level on the `hyperchat` logger
+at import, every INFO line this service logs about itself — this one, the prompt and corpus hashes, the
+tracing report — was written nowhere while the warnings appeared (issue `#105`). The blunt fix,
+`basicConfig(level=logging.INFO)`, raises the root and so every other logger with it, which turned on
+`httpx2`'s request line once per provider call; the level that was wrong is this logger's, so this
+logger gets it. `tests/test_logging.py` measures the configuration uvicorn actually imposes, in a
+subprocess, because `caplog` cannot: it installs a handler at the root and takes its level from
+pytest, so it can see that the code calls `logger.info` and not that the process has anywhere to put
+it.
 
 ## Tracing, and where the runs go
 

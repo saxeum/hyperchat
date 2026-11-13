@@ -13,7 +13,7 @@ Three words are used precisely here, because two of them are easy to confuse: **
 principal that opens pull requests; **coding agent** is the LLM operating that checkout, inside its
 container.
 
-**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.9 s · ~58 k tokens per run — at `676b95b`, [the report](docs/eval-report.md).
+**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.4 s · ~68 k tokens per run — at `5bf4cff`, [the report](docs/eval-report.md).
 
 ## Read this in 60 seconds, 10 minutes, or an hour
 
