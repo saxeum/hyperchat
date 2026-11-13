@@ -18,8 +18,8 @@ of a reader, and they work from a fresh clone:
 
 ```sh
 git clone https://github.com/saxeum/hyperchat && cd hyperchat && uv sync --frozen
-make test      # 194 tests, no credentials, ~8 s
-make eval      # every case in evals/ through the model, ~55 s
+make test      # the suite; no credentials needed
+make eval      # every case in evals/ through the model
 make report    # the same run, written to docs/eval-report.md and to the line below
 ```
 
@@ -33,7 +33,7 @@ costs cents a month; and the open issues are a backlog rather than work in fligh
 for (`#24`), the two eval tickets that would sharpen it (`#94`, `#97`), what production would differ
 by (`#78`), and one key file to rename on the host that holds it (`#65`).
 
-**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.3 s · ~61 k tokens per run — at `40e394b`, [the report](docs/eval-report.md).
+**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.8 s · ~71 k tokens per run — at `6a7686e`, [the report](docs/eval-report.md).
 
 ## Read this in 60 seconds, 10 minutes, or an hour
 
