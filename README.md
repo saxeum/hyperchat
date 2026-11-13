@@ -29,11 +29,11 @@ reader needs; `make help-all` shows the platform targets, which are kept working
 
 Parked means: CI stays required on `main`; a merge that changes something deployable still deploys;
 the service is deployed from the merge commit of any change that can alter it, scales to zero, and
-costs cents a month; and the open issues are decisions rather than work in progress — what this agent
-is for (`#24`), what production would differ by (`#78`), and one key file to rename on the host that
-holds it (`#65`).
+costs cents a month; and the open issues are a backlog rather than work in flight — what this agent is
+for (`#24`), the two eval tickets that would sharpen it (`#94`, `#97`), what production would differ
+by (`#78`), and one key file to rename on the host that holds it (`#65`).
 
-**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.8 s · ~66 k tokens per run — at `0fb3d3b`, [the report](docs/eval-report.md).
+**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.3 s · ~61 k tokens per run — at `40e394b`, [the report](docs/eval-report.md).
 
 ## Read this in 60 seconds, 10 minutes, or an hour
 
