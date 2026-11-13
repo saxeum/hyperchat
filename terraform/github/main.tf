@@ -34,7 +34,7 @@ variable "default_branch" {
 
 resource "github_repository" "repo" {
   name        = var.name
-  description = "A containerised hello-world, and the private registry that holds its image"
+  description = "A containerised agent on Cloud Run: evals, tracing, and a coding agent joined as an untrusted contributor"
   visibility  = "public"
   has_issues  = true
   has_wiki    = false
@@ -44,7 +44,20 @@ resource "github_repository" "repo" {
   # repository, and an initial README commit would have to be reconciled with it before the first
   # push — which is a merge in a repository whose whole point is that it has one clean root.
 
-  topics = ["fastapi", "docker", "terraform", "google-cloud", "artifact-registry"]
+  topics = [
+    "fastapi",
+    "docker",
+    "terraform",
+    "google-cloud",
+    "cloud-run",
+    "artifact-registry",
+    "github-actions",
+    "llm",
+    "ai-agents",
+    "langgraph",
+    "evals",
+    "prompt-injection",
+  ]
 
   # Both free on a public repository, and both are the mechanism that makes "no secret has ever
   # been near this" a property rather than an intention.

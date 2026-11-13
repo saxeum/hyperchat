@@ -1,7 +1,7 @@
 [project]
 name = "hyperchat"
 version = "0.1.0"
-description = "A containerised hello-world, published to a private registry"
+description = "A containerised agent on Cloud Run, deployed by CI"
 readme = "README.md"
 requires-python = ">=3.13"
 # `fastapi`, not `fastapi[standard]`. The extra brings `fastapi-cli` and `fastapi-cloud-cli`, whose

@@ -9,8 +9,8 @@ request.
 
 ## What this repository is
 
-A containerised hello-world, the registry it is pushed to, and the Cloud Run service that runs the
-image. There is no user data here, so the interesting classes are: anything that lets a commit reach
+A containerised agent on Cloud Run, the registry its image is pushed to, and the service that runs
+it. There is no user data here, so the interesting classes are: anything that lets a commit reach
 `main` without review, anything that gets a third-party binary into the image, anything that reaches
 the public service without passing the allowlist, and anything that publishes a credential that was
 not meant to be public.

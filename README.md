@@ -13,16 +13,38 @@ Three words are used precisely here, because two of them are easy to confuse: **
 principal that opens pull requests; **coding agent** is the LLM operating that checkout, inside its
 container.
 
-**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.4 s · ~68 k tokens per run — at `5bf4cff`, [the report](docs/eval-report.md).
+**Status: parked, 2026-11-13.** Nothing is being added. Three commands are what this repository asks
+of a reader, and they work from a fresh clone:
+
+```sh
+git clone https://github.com/saxeum/hyperchat && cd hyperchat && uv sync --frozen
+make test      # 194 tests, no credentials, ~8 s
+make eval      # every case in evals/ through the model, ~55 s
+make report    # the same run, written to docs/eval-report.md and to the line below
+```
+
+`make eval` needs one thing and says so when it is missing: the provider key, at
+`~/.config/hyperchat/agent-deepseek.token` or in `PROVIDER_API_KEY`. `make help` shows the commands a
+reader needs; `make help-all` shows the platform targets, which are kept working and not extended.
+
+Parked means: CI stays required on `main`; a merge that changes something deployable still deploys;
+the service is deployed from the merge commit of any change that can alter it, scales to zero, and
+costs cents a month; and the open issues are decisions rather than work in progress — what this agent
+is for (`#24`), what production would differ by (`#78`), and one key file to rename on the host that
+holds it (`#65`).
+
+**Latest eval:** 20/20 decided · injection 5/5 (floor 4) · p95 3.8 s · ~66 k tokens per run — at `0fb3d3b`, [the report](docs/eval-report.md).
 
 ## Read this in 60 seconds, 10 minutes, or an hour
 
+- **5 minutes:** the three commands above, then `docs/eval-report.md` — the score, the cost, the three
+  hashes that say which code produced it.
 - **60 seconds:** the bullets below, and the layout table.
 - **10 minutes:** `docs/authentication.md` — the security model — then the decisions.
 - **An hour:** the pull requests. The arguments in this repository live there, against the SHA each
   one was made on.
 
-`make help` lists every target; the order is `github → registry → login → build → push → deploy`.
+`make help-all` lists every target; the order is `github → registry → login → build → push → deploy`.
 `make lint` and `make test` need no credentials; `make eval` needs the provider key, because it
 asks the model. The merge path is `.github/workflows/deploy.yml`,
 whose header and `terraform/registry/identity.tf` are its documentation.
@@ -165,10 +187,11 @@ MESSAGE='Reply with exactly: ok' LANGSMITH_TRACING=true make chat
 
 Streaming — the answer as it is produced, rather than after it is finished. The run bounds are here: a
 step ceiling, a time budget, a provider timeout and a per-caller rate, each with its own answer
-(`src/hyperchat/README.md`, and `make limits` for the last one). The next phase is the agent itself:
-tools, a second model, and the security testing that goes with them. `make eval` is the first attempt
-at the other question — not what happened, but whether it was right — and its case set is a line per
-case in `evals/cases.jsonl` with a `why` on each.
+(`src/hyperchat/README.md`, and `make limits` for the last one). The agent itself — tools, a second
+model, and the security testing that goes with them — is where this would go next, and parking is the
+decision to stop before that rather than during it. `make eval` is the first attempt at the other
+question — not what happened, but whether it was right — and its case set is a line per case in
+`evals/cases.jsonl` with a `why` on each.
 
 ## Where to go deeper
 
